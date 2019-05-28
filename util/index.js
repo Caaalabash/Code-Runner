@@ -9,6 +9,8 @@ module.exports = {
         if (e) reject(e)
         else resolve(data)
       })
+    }).catch(e => {
+      console.log('Render Error' + e)
     })
   },
   execCommand(command, options) {
@@ -17,6 +19,8 @@ module.exports = {
         if (e) reject(e)
         else resolve(data)
       })
+    }).catch(e => {
+      console.log('Exec Error' + e)
     })
   },
   writeFile(file, data) {
@@ -25,6 +29,8 @@ module.exports = {
         if (e) reject(e)
         else resolve()
       })
+    }).catch(e => {
+      console.log('Write Error' + e)
     })
   }
 }
