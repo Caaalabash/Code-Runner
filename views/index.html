@@ -13,7 +13,7 @@
     <input name="version" id="version" /><br/>
     <p>code: </p>
     <input name="code" id="code"/><br/>
-    <button type="submit" onclick="handleSubmit">submit</button><br/>
+    <button type="submit" onclick="handleSubmit()">submit</button><br/>
     <textarea rows="3" cols="20" id="result"></textarea>
   </main>
 </body>
@@ -37,7 +37,6 @@
     }).then(response => response.json())
 
     if (!errno) {
-      console.log(data)
       document.getElementById('result').value = data
     }
   }
