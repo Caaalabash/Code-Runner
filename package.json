@@ -1,0 +1,24 @@
+{
+  "name": "code-runner",
+  "version": "0.1.0",
+  "description": "代码在线运行工具",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Caaalabash/Code-Runner.git"
+  },
+  "author": "Caaalabash <1121062986@qq.com> (https://github.com/Caaalabash)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Caaalabash/Code-Runner/issues"
+  },
+  "homepage": "https://github.com/Caaalabash/Code-Runner#readme",
+  "dependencies": {
+    "koa": "^2.7.0",
+    "koa-bodyparser": "^4.2.1",
+    "koa-router": "^7.4.0"
+  }
+}
