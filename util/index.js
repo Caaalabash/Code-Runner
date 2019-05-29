@@ -8,12 +8,12 @@ module.exports = {
    * @param {object} options 选项
    * @param {string} timeoutCommand 代码执行超时时执行的命令
    */
-  execCommand(command, options, timeoutCommand) {
+  execCommand(command, options, timeoutCommand = '') {
     return new Promise((resolve, reject) => {
       const child_process = exec(command, options, (e, stdout, stderr) => {
         if (e) reject(e)
         else if (stderr) reject(stderr)
-        else resolve(data)
+        else resolve(stdout)
       })
       child_process.on('exit', (code, signal) => {
         if (signal) {
