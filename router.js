@@ -30,7 +30,7 @@ router.post('/runner', async (ctx) => {
     }
   }
   const [e, data] = await execCommand(
-    `docker run --rm --memory=50m --name runner-${idx} -v ${hostPath}:${workPath} ${language}:${version} ${language} ${filePath}`,
+    `docker run --rm --memory=50m --name runner-${idx} -v ${hostPath}:${workPath} ${language}:${version} ${language} code/${filename}`,
     { timeout: 10000 },
     `docker stop runner-${idx}`
   )
