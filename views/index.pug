@@ -1,0 +1,49 @@
+doctype html
+html
+  head
+    meta(charset="urf-8")
+    title Code Runner
+  body
+    h1 Code Runner Demo
+    main
+      p language:
+      select(id="language")
+        each language in languageList
+          option(value=language)= language
+
+      p version:
+      input(id="version")
+      br
+
+      p code:
+      textarea(id="code" rows="7" cols="40" )
+      br
+      button(onclick="handleSubmit()") submit
+      br
+
+      p result:
+      textarea(id="result" rows="7" cols="40" )
+      br
+  script(type="text/javascript").
+    const languageInput = document.getElementById('language')
+    const versionInput = document.getElementById('version')
+    const codeInput = document.getElementById('code')
+
+    async function handleSubmit() {
+      const payload = {
+        language: languageInput.value,
+        version: versionInput.value,
+        code: codeInput.value
+      }
+      const {errno, data} = await fetch('/runner', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      }).then(response => response.json())
+
+      if (!errno) {
+        document.getElementById('result').value = data
+      }
+    }
