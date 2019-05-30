@@ -165,7 +165,7 @@ html
       const payload = {
         language: languageInput.value,
         version: versionInput.value,
-        code: codeInput.value
+        code: editor.getValue()
       }
       const {errno, data} = await fetch('/runner', {
         method: 'POST',
