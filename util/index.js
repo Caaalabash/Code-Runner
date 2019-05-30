@@ -50,19 +50,18 @@ module.exports = {
       })
     }).then(data => [null, data]).catch(err => [err, null])
   },
-  /**
-   * @param {string} language 语言
-   * @param {number} idx 唯一索引
-   * @return {string} 唯一文件名
-   */
-  getUniqueFilename(language, idx) {
-    switch (language) {
-      case 'python':
-        return `main-${idx}.py`
-      case 'go':
-        return `main-${idx}.go`
-      default:
-        return `main-${idx}.js`
+  languageList: {
+    node: {
+      extension: '.js',
+      dockerPrefix: 'node',
+    },
+    python: {
+      extension: '.py',
+      dockerPrefix: 'python',
+    },
+    go: {
+      extension: '.go',
+      dockerPrefix: 'golang'
     }
-  }
+  },
 }

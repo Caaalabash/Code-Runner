@@ -1,6 +1,6 @@
 const router = require('koa-router')()
 const path = require('path')
-const { writeFile, execCommand, getUniqueFilename } = require('./util')
+const { writeFile, execCommand, languageList } = require('./util')
 
 const hostPath = path.join(__dirname, '/code')
 const workPath = '/code'
@@ -18,8 +18,8 @@ router.get('/', async ctx => {
 router.post('/runner', async (ctx) => {
   idx += 1
   const { language, code, version } = ctx.request.body
-  const filename = getUniqueFilename(language, idx)
-  const filePath = path.join(hostPath, filename)
+  const { extension, dockerPrefix } = languageList[language]
+  const filename = `main-${idx}${extension}`
 
   const [writeErr, ] = await writeFile(hostPath, filename, code)
   const [execErr, ] = await execCommand(`docker pull ${language}:${version}`, { timeout: 30000 })
@@ -31,7 +31,7 @@ router.post('/runner', async (ctx) => {
     }
   }
   const [e, data] = await execCommand(
-    `docker run --rm --memory=50m --name runner-${idx} -v ${hostPath}:${workPath} ${language}:${version} ${language} code/${filename}`,
+    `docker run --rm --memory=50m --name runner-${idx} -v ${hostPath}:${workPath} ${dockerPrefix}:${version} ${language} code/${filename}`,
     { timeout: 10000 },
     `docker stop runner-${idx}`
   )
