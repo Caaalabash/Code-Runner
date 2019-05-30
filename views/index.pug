@@ -3,31 +3,163 @@ html
   head
     meta(charset="urf-8")
     title Code Runner
+    link(rel="stylesheet" href="https://static.calabash.top/code-mirror/codemirror.css")
+    link(rel="stylesheet" href="https://static.calabash.top/code-mirror/theme/dracula.css")
+    script(src="https://static.calabash.top/code-mirror/codemirror.js")
+    script(src="https://static.calabash.top/code-mirror/mode/javascript.js")
+    script(src="https://static.calabash.top/code-mirror/mode/go.js")
+    script(src="https://static.calabash.top/code-mirror/mode/python.js")
+    style(type="text/css").
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      .CodeMirror {
+        height: 60vh;
+        box-shadow: 0 4px 24px 4px rgba(6, 8, 40, .5);
+      }
+      .CodeMirror-vscrollbar::-webkit-scrollbar {
+        width: 15px;
+      }
+      .CodeMirror-vscrollbar::-webkit-scrollbar-track {
+        background-color: #eee;
+      }
+      .CodeMirror-vscrollbar::-webkit-scrollbar-thumb {
+        background: rgb(204, 204, 204);
+      }
+      body {
+        height: 100vh;
+        background: rgb(40, 42, 54);
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        padding: 15px 30px;
+        color: aliceblue;
+        box-shadow: 0 4px 24px 0 rgba(6, 8, 40, .5);
+      }
+      .header-title {
+        font-weight: bold;
+        font-size: 14px;
+      }
+      .header-link {
+        margin-left: 10px;
+        text-decoration: none;
+        color: aliceblue;
+        font-weight: normal;
+      }
+
+      .content {
+        position: relative;
+        display: flex;
+        height: calc(40vh - 50px);
+      }
+      .execute {
+        position: absolute;
+        top: -50px;
+        right: 20px;
+        border-style: solid;
+        border-width: 10px 17px;
+        border-color: transparent transparent transparent #009a61;
+        cursor: pointer;
+      }
+      .setting {
+        flex-basis: 300px;
+        box-shadow: 7px 0 7px -7px black;
+      }
+      .setting:before {
+        content: 'Setting >';
+        margin-left: 5px;
+        color: rgb(113, 113, 114);
+        font-size: 15px;
+        font-family: monospace;
+      }
+      .setting-row {
+        display: flex;
+        align-items: center;
+        height: 35px;
+        margin-left: 30px;
+        margin-bottom: 5px;
+        font-size: 14px;
+        font-weight: bold;
+        color: #78CF8A;
+        font-family: Verdana, "Geneva CE", lucida, 'Microsoft YaHei', sans-serif;
+      }
+      .setting-label {
+        display: inline-block;
+        width: 100px;
+      }
+      #language {
+        background: #fafdfe;
+        height: 28px;
+        line-height: 28px;
+        border: 1px solid #9bc0dd;
+        border-radius: 2px;
+      }
+      #version {
+        width: 60px;
+        background: #fafdfe;
+        height: 28px;
+        padding-left: 5px;
+        line-height: 28px;
+        border: 1px solid #9bc0dd;
+        border-radius: 2px;
+      }
+      #result {
+        padding: 5px;
+        width: 100%;
+        background: rgba(43, 43, 43, .7);
+        font-size: 15px;
+        border: none;
+        resize: none;
+        color: rgba(255, 255, 255, .7);
+      }
   body
-    h1 Code Runner Demo
-    main
-      p language:
-      select(id="language")
-        each language in languageList
-          option(value=language)= language
+    header(class="header")
+      p(class="header-title") Code Runner
+        a(class="header-link" href="https://github.com/Caaalabash/Code-Runner") [https://github.com/Caaalabash/Code-Runner]
+      <svg xmlns="http://www.w3.org/2000/svg" width="54" height="15" viewBox="0 0 54 15">
+        <g fill="none" fill-rule="evenodd" transform="translate(1 1)">
+          <circle cx="6" cy="6" r="6" fill="#27C93F" stroke="#1AAB29" stroke-width=".5"></circle>
+          <circle cx="26" cy="6" r="6" fill="#FFBD2E" stroke="#DEA123" stroke-width=".5"></circle>
+          <circle cx="46" cy="6" r="6" fill="#FF5F56" stroke="#E0443E" stroke-width=".5"></circle>
+        </g>
+      </svg>
 
-      p version:
-      input(id="version")
-      br
+    main(class="main")
+      textarea(id="code")
+      div(class="content")
+        div(class="execute" onclick="handleSubmit()")
+        div(class="setting")
+          div(class="setting-row")
+            span(class="setting-label") language:
+            select(id="language" onchange="handleSelect(this.value)")
+              each language in languageList
+                option(value=language)= language
+          div(class="setting-row")
+            span(class="setting-label") version:
+            input(id="version" value="latest")
 
-      p code:
-      textarea(id="code" rows="7" cols="40" )
-      br
-      button(onclick="handleSubmit()") submit
-      br
+        textarea(id="result" readonly placeholder="Output >")
 
-      p result:
-      textarea(id="result" rows="7" cols="40" )
-      br
   script(type="text/javascript").
     const languageInput = document.getElementById('language')
     const versionInput = document.getElementById('version')
     const codeInput = document.getElementById('code')
+    const resultDom = document.getElementById('result')
+
+    const editor = CodeMirror.fromTextArea(codeInput, {
+      lineNumbers: true,
+      theme: 'dracula',
+      matchBrackets: true,
+      mode: 'javascript'
+    });
+
+    function handleSelect(value) {
+      value = value === 'node' ? 'javascript' : value
+      editor.setValue('')
+      editor.setOption("mode", value)
+    }
 
     async function handleSubmit() {
       const payload = {
@@ -44,6 +176,6 @@ html
       }).then(response => response.json())
 
       if (!errno) {
-        document.getElementById('result').value = data
+        resultDom.value = data
       }
     }

@@ -59,6 +59,8 @@ module.exports = {
     switch (language) {
       case 'python':
         return `main-${idx}.py`
+      case 'go':
+        return `main-${idx}.go`
       default:
         return `main-${idx}.js`
     }
