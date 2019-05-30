@@ -22,7 +22,7 @@ router.post('/runner', async (ctx) => {
   const filename = `main-${idx}${extension}`
 
   const [writeErr, ] = await writeFile(hostPath, filename, code)
-  const [execErr, ] = await execCommand(`docker pull ${language}:${version}`, { timeout: 30000 })
+  const [execErr, ] = await execCommand(`docker pull ${dockerPrefix}:${version}`, { timeout: 30000 })
 
   if (writeErr || execErr) {
     return ctx.body = {
