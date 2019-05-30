@@ -18,7 +18,7 @@ router.get('/', async ctx => {
 router.post('/runner', async (ctx) => {
   idx += 1
   const { language, code, version } = ctx.request.body
-  const { extension, dockerPrefix } = languageList[language]
+  const { extension, dockerPrefix, command } = languageList[language]
   const filename = `main-${idx}${extension}`
 
   const [writeErr, ] = await writeFile(hostPath, filename, code)
@@ -31,7 +31,7 @@ router.post('/runner', async (ctx) => {
     }
   }
   const [e, data] = await execCommand(
-    `docker run --rm --memory=50m --name runner-${idx} -v ${hostPath}:${workPath} ${dockerPrefix}:${version} ${language} code/${filename}`,
+    `docker run --rm --memory=50m --name runner-${idx} -v ${hostPath}:${workPath} ${dockerPrefix}:${version} ${command} code/${filename}`,
     { timeout: 10000 },
     `docker stop runner-${idx}`
   )

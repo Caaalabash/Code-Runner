@@ -54,14 +54,17 @@ module.exports = {
     node: {
       extension: '.js',
       dockerPrefix: 'node',
+      command: 'node'
     },
     python: {
       extension: '.py',
       dockerPrefix: 'python',
+      command: 'python'
     },
     go: {
       extension: '.go',
-      dockerPrefix: 'golang'
+      dockerPrefix: 'golang',
+      command: 'go run'
     }
   },
 }
