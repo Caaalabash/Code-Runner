@@ -147,18 +147,27 @@ html
     const versionInput = document.getElementById('version')
     const codeInput = document.getElementById('code')
     const resultDom = document.getElementById('result')
-
     const editor = CodeMirror.fromTextArea(codeInput, {
       lineNumbers: true,
       theme: 'dracula',
       matchBrackets: true,
       mode: 'javascript'
-    });
+    })
+    const eventSource = new EventSource('/sse')
+    let dotCount = 1
+    eventSource.addEventListener('alive', function() {
+      const dot = ''.padStart(dotCount++ % 3, '.')
+      resultDom.placeholder = `Output> sandbox connect${dot}`
+    })
+    eventSource.onerror = function() {
+      resultDom.placeholder = `Output> sandbox disconnect`
+    }
 
     function handleSelect(value) {
       value = value === 'node' ? 'javascript' : value
       editor.setValue('')
       editor.setOption("mode", value)
+      resultDom.value = ''
     }
 
     async function handleSubmit() {

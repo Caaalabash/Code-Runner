@@ -1,6 +1,7 @@
-const router = require('koa-router')()
 const path = require('path')
-const { writeFile, execCommand, languageList } = require('./util')
+const PassThrough = require('stream').PassThrough
+const router = require('koa-router')()
+const { writeFile, execCommand, languageList, writeStream } = require('./util')
 
 const hostPath = path.join(__dirname, '/code')
 const workPath = '/code'
@@ -40,6 +41,23 @@ router.post('/runner', async (ctx) => {
     errno: 0,
     data: e || data
   }
+})
+router.get('/sse', ctx => {
+  ctx.set({
+    'Content-Type':'text/event-stream',
+    'Cache-Control':'no-cache',
+    'Connection': 'keep-alive'
+  })
+  const stream = new PassThrough()
+  const aliveTimer = setInterval(() => {
+    writeStream(stream, 'alive')
+  }, 5000)
+  stream.on('close', function() {
+    clearInterval(aliveTimer)
+  })
+
+  writeStream(stream, 'alive')
+  ctx.body = stream
 })
 router.get('*', async ctx => {
   await ctx.render('404')
