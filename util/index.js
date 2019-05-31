@@ -59,6 +59,7 @@ module.exports = {
    * @param {object} data 消息的数据字段
    */
   writeStream(target, event, data = {}) {
+    if (!target) return
     return target.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
   },
   /**
