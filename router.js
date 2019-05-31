@@ -23,15 +23,15 @@ router.post('/runner', async (ctx) => {
       SSE.writeStream(uid, 'sse-message', 'sand box: 镜像拉取超时')
     })
   ])
-  SSE.writeStream(uid, 'sse-message', 'sand box: 镜像拉取成功' )
+  SSE.writeStream(uid, 'sse-message', 'sand box: 镜像拉取成功')
 
   const [e, data] = await execCommand(
     `docker run --rm --memory=50m --name runner-${idx} -v ${hostPath}:${workPath} ${dockerPrefix}:${version} ${command} /code/${filename}`,
     { timeout: 10000 },
     `docker stop runner-${idx}`
   )
-  SSE.writeStream(uid, 'sse-message', e || data )
-  SSE.writeStream(uid, 'sse-message', 'sand box: 执行完毕' )
+  SSE.writeStream(uid, 'sse-result', { result: e || data } )
+  SSE.writeStream(uid, 'sse-message', 'sand box: 执行完毕')
   return ctx.body = { }
 })
 
