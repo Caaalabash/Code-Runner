@@ -163,7 +163,7 @@ html
       resultDom.placeholder = `Output> sandbox disconnect`
     }
     eventSource.addEventListener('sse-result', function (event) {
-      const data = JSON.parse(JSON.stringify(event.data)).result || ''
+      const data = JSON.parse(event.data).result || ''
       resultDom.value += `${data}\n`
     })
     eventSource.addEventListener('sse-message', function (event) {
