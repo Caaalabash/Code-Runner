@@ -153,27 +153,18 @@ html
       matchBrackets: true,
       mode: 'javascript'
     })
-
     const eventSource = new EventSource('/sse')
-    let dotCount = 1
     let uid
-    eventSource.addEventListener('sse-connect', function (id) {
-      uid = id
-    })
-    eventSource.addEventListener('sse-alive', function() {
-      const dot = ''.padStart(dotCount++ % 4, '.')
-      resultDom.placeholder = `Output> sandbox connect${dot}`
+    eventSource.addEventListener('sse-connect', function (event) {
+      resultDom.placeholder = `Output> sandbox connect`
+      uid = event.data
     })
     eventSource.onerror = function () {
       resultDom.placeholder = `Output> sandbox disconnect`
     }
-    eventSource.addEventListener('sse-pull-start', function (msg) {
-      resultDom.value = msg
+    eventSource.addEventListener('sse-message', function (event) {
+      resultDom.value += `${event.data}\n`
     })
-    eventSource.addEventListener('sse-pull-end', function (msg) {
-      resultDom.value += msg
-    })
-
 
     function handleSelect(value) {
       value = value === 'node' ? 'javascript' : value
@@ -182,7 +173,7 @@ html
       resultDom.value = ''
     }
 
-    async function handleSubmit() {
+    function handleSubmit() {
       resultDom.value = ''
       const payload = {
         language: languageInput.value,
@@ -190,15 +181,11 @@ html
         code: editor.getValue(),
         uid: uid
       }
-      const {errno, data} = await fetch('/runner', {
+      fetch('/runner', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
-      }).then(response => response.json())
-
-      if (!errno) {
-        resultDom.value += data
-      }
+      })
     }

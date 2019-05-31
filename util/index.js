@@ -2,14 +2,16 @@ const path = require('path')
 const fs = require('fs')
 const { exec } = require('child_process')
 
+const noop = () => {}
+
 module.exports = {
   /**
    * 执行命令的Promise封装
    * @param {string} command 要运行的命令
    * @param {object} options 选项
-   * @param {string} timeoutCommand 代码执行超时时执行的命令
+   * @param {string | function} handleTimeout 代码执行超时时执行的命令或回调
    */
-  execCommand(command, options, timeoutCommand = '') {
+  execCommand(command, options, handleTimeout = noop) {
     return new Promise((resolve, reject) => {
       const child_process = exec(command, options, (e, stdout, stderr) => {
         if (e) reject(e)
@@ -17,8 +19,13 @@ module.exports = {
         else resolve(stdout)
       })
       child_process.on('exit', (code, signal) => {
-        if (signal) {
-          exec(timeoutCommand, { timeout: 5000 }, () => {
+        if (!signal) return
+        const isFunction = typeof handleTimeout === 'function'
+
+        if (isFunction) {
+          handleTimeout()
+        } else {
+          exec(handleTimeout, { timeout: 5000 }, () => {
             reject(new Error('代码执行超时'))
           })
         }
@@ -30,8 +37,9 @@ module.exports = {
    * @param {string} folder 目标文件夹
    * @param {string} filename 文件名
    * @param {object} data 文件数据
+   * @param {function} handleWriteError 写入异常处理函数
    */
-  writeFile(folder, filename, data) {
+  writeFile(folder, filename, data, handleWriteError = noop) {
     return new Promise((resolve, reject) => {
       fs.writeFile(path.join(folder, filename), data, e => {
         if (!e) {
@@ -50,17 +58,10 @@ module.exports = {
           reject(e.message)
         }
       })
-    }).then(data => [null, data]).catch(err => [err, null])
-  },
-  /**
-   * EventSource事件流格式封装
-   * @param {stream} target 写入流
-   * @param {string} event 事件类型
-   * @param {object} data 消息的数据字段
-   */
-  writeStream(target, event, data = {}) {
-    if (!target) return
-    return target.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+    }).then(data => [null, data]).catch(err => {
+      handleWriteError()
+      return [err, null]
+    })
   },
   /**
    * 语言相关属性
