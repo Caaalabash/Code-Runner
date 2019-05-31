@@ -14,8 +14,8 @@ module.exports = {
   execCommand(command, options, handleTimeout = noop) {
     return new Promise((resolve, reject) => {
       const child_process = exec(command, options, (e, stdout, stderr) => {
-        if (e) reject(e)
-        else if (stderr) reject(stderr)
+        if (stderr) reject(stderr)
+        else if (e) reject(e)
         else resolve(stdout)
       })
       child_process.on('exit', (code, signal) => {
