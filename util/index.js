@@ -30,7 +30,7 @@ module.exports = {
           })
         }
       })
-    }).then(data => [null, data]).catch(err => [err.message, null])
+    }).then(data => [null, data]).catch(err => [err, null])
   },
   /**
    * 写入文件的Promise封装

@@ -31,7 +31,7 @@ router.post('/runner', async (ctx) => {
     `docker stop runner-${idx}`
   )
   SSE.writeStream(uid, 'sse-message', e || data )
-  SSE.writeStream(uid, 'sse-message', '\nsand box: 执行完毕' )
+  SSE.writeStream(uid, 'sse-message', 'sand box: 执行完毕' )
   return ctx.body = { }
 })
 
