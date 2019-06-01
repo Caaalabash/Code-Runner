@@ -197,7 +197,7 @@ html
     }
     eventSource.addEventListener('sse-result', function (event) {
       const data = JSON.parse(event.data).result || ''
-      resultDom.value += `${data}\n`
+      resultDom.value += `${data}`
     })
     eventSource.addEventListener('sse-message', function (event) {
       resultDom.value += `${event.data}\n`

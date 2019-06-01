@@ -10,6 +10,6 @@ module.exports = class SSETransform extends Transform {
     this.eventName = eventName || 'sse-result'
   }
   _transform(chunk, encoding, callback) {
-    callback(null, `event: ${this.eventName}\ndata: ${JSON.stringify({result: chunk.toString('utf8')})}\n\n`)
+    callback(null, `event: ${this.eventName}\ndata: ${JSON.stringify({ result: chunk.toString('utf8') })}\n\n`)
   }
 }

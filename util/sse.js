@@ -3,13 +3,17 @@ const { PassThrough } = require('stream')
 const instanceMap = new Map()
 let uid = 0
 
+/**
+ * Server Sent Events封装
+ */
 module.exports = class SSE {
   /**
    * 构造函数中初始化转换流、身份标识、执行初始化方法
    */
-  constructor() {
+  constructor(options = {}) {
     this.stream = new PassThrough()
     this.uid = ++uid
+    this.intervalTime = options.intervalTime || 5000
     this._init()
   }
   /**
@@ -33,9 +37,7 @@ module.exports = class SSE {
     instanceMap.set(this.uid, this)
 
     this._writeKeepAliveStream()
-    const timer = setInterval(() => {
-      this._writeKeepAliveStream()
-    }, 5000)
+    const timer = setInterval(() => { this._writeKeepAliveStream() }, this.intervalTime)
 
     this.stream.on('close', () => {
       clearInterval(timer)
