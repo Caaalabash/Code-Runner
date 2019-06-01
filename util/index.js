@@ -1,28 +1,33 @@
 const path = require('path')
 const fs = require('fs')
-const { exec } = require('child_process')
+const { exec, spawn } = require('child_process')
+const { PassThrough } = require('stream')
+const SSETransform = require('./transform')
 
 const noop = () => {}
+const isFunction = x => typeof x === 'function'
 
 module.exports = {
   /**
-   * 执行命令的Promise封装
+   * 执行exec命令的Promise封装
    * @param {string} command 要运行的命令
    * @param {object} options 选项
-   * @param {string | function} handleTimeout 代码执行超时时执行的命令或回调
+   * @param {string | function} options.handleTimeout 代码执行超时时执行的命令或回调
+   * @param {object} options.option exec函数的选项参数
    */
-  execCommand(command, options, handleTimeout = noop) {
+  execCommand(command, options = {}) {
+    const { handleTimeout, ...option } = options
+
     return new Promise((resolve, reject) => {
-      const child_process = exec(command, options, (e, stdout, stderr) => {
+      const childProcess = exec(command, option, (e, stdout, stderr) => {
         if (stderr) reject(stderr)
         else if (e) reject(e)
         else resolve(stdout)
       })
-      child_process.on('exit', (code, signal) => {
+      childProcess.on('exit', (code, signal) => {
         if (!signal) return
-        const isFunction = typeof handleTimeout === 'function'
 
-        if (isFunction) {
+        if (isFunction(handleTimeout)) {
           handleTimeout()
         } else {
           exec(handleTimeout, { timeout: 5000 }, () => {
@@ -31,6 +36,34 @@ module.exports = {
         }
       })
     }).then(data => [null, data]).catch(err => [err, null])
+  },
+  /**
+   * 执行spawn命令的封装
+   * @param {string} commandStr 命令
+   * @param {PassThrough} targetStream 目标流
+   * @param {object} options 传给spawn的选项参数
+   * @param {function | string} options.onExit 子进程退出后执行的命令或函数
+   * @return {child_process} 子进程
+   */
+  spawnCommand(commandStr, targetStream, options = {}) {
+    const { onExit, ...option } = options
+    const [command, ...args] = commandStr.split(' ')
+    const childProcess = spawn(command, args, option)
+
+    const transferStation = new PassThrough()
+    const t = new SSETransform()
+
+    childProcess.stdout.pipe(transferStation)
+    childProcess.stderr.pipe(transferStation)
+    transferStation.pipe(t).pipe(targetStream, { end: false })
+
+    childProcess.on('close', () => {
+      try {
+        isFunction(onExit) ? onExit() : execCommand(onExit)
+      } catch (e) { }
+    })
+
+    return childProcess
   },
   /**
    * 写入文件的Promise封装

@@ -48,7 +48,6 @@ html
         color: aliceblue;
         font-weight: normal;
       }
-
       .content {
         position: relative;
         display: flex;
@@ -87,7 +86,7 @@ html
       }
       .setting-label {
         display: inline-block;
-        width: 100px;
+        width: 125px;
       }
       #language {
         background: #fafdfe;
@@ -114,6 +113,36 @@ html
         resize: none;
         color: rgba(255, 255, 255, .7);
       }
+      .checkbox-btn {
+        display: none;
+      }
+      .checkbox-label {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 20px;
+        border-radius: 20px;
+        background-color: gray;
+        overflow: hidden;
+      }
+      .checkbox-label:before {
+        content: '';
+        position: absolute;
+        left: 0;
+        width: 20px;
+        height: 20px;
+        display: inline-block;
+        border-radius: 20px;
+        background-color: white;
+        transition: all 0.5s;
+      }
+      .checkbox-btn:checked + .checkbox-label:before {
+        left: 20px;
+      }
+
+      .checkbox-btn:checked + .checkbox-label {
+        background-color: #0084ff;
+      }
   body
     header(class="header")
       p(class="header-title") Code Runner
@@ -139,7 +168,10 @@ html
           div(class="setting-row")
             span(class="setting-label") version:
             input(id="version" value="latest")
-
+          div(class="setting-row")
+            span(class="setting-label") stream mode:
+            input(type="checkbox" id="checkbox" class="checkbox-btn")
+            label(for="checkbox" class="checkbox-label")
         textarea(id="result" readonly placeholder="Output >")
 
   script(type="text/javascript").
@@ -147,6 +179,7 @@ html
     const versionInput = document.getElementById('version')
     const codeInput = document.getElementById('code')
     const resultDom = document.getElementById('result')
+    const checkInput = document.getElementById('checkbox')
     const editor = CodeMirror.fromTextArea(codeInput, {
       lineNumbers: true,
       theme: 'dracula',
@@ -183,6 +216,7 @@ html
         language: languageInput.value,
         version: versionInput.value,
         code: editor.getValue(),
+        streamMode: checkInput.checked,
         uid: uid
       }
       fetch('/runner', {
