@@ -91,15 +91,19 @@ module.exports = {
     const { containerName, imageName, execCommand, volume } = dockerOptions
 
     return new Promise((resolve, reject) => {
+      let result
       const childProcess = exec(`docker run --rm --memory=50m --name ${containerName} -v ${volume} ${imageName} ${execCommand}`, (e, stdout, stderr) => {
-        resolve(stderr || stdout)
+        result = stderr || stdout
       })
 
       let timer = stopDocker(containerName, timeout)
 
       childProcess.on('close', code => {
         if (code === DOCKER_EXIT_CODE) reject(new Error(TIMEOUT_ERR))
-        else clearTimeout(timer)
+        else {
+          resolve(result)
+          clearTimeout(timer)
+        }
       })
     }).then(result => [null, result]).catch(e => [e, null])
   },
