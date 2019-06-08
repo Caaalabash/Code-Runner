@@ -3,10 +3,11 @@ const router = require('koa-router')()
 const {
   TIMEOUT_ERR,
   WRITE_ERR,
-  writeFile,
-  execCommand,
   languageList,
-  spawnCommand
+  pullImage,
+  startDockerByExec,
+  startDockerBySpawn,
+  writeFile,
 } = require('./util/index')
 const SSE = require('./util/sse')
 
@@ -42,63 +43,56 @@ router
     const { language, code, version, uid, streamMode } = ctx.request.body
     const { extension, dockerPrefix, command } = languageList[language]
     /**
-     * 文件名、镜像名、挂载卷、容器名、执行命令、拉取镜像命令、运行镜像命令、停止镜像命令
+     * 文件名、本地路径、镜像名、容器名、挂载卷、执行命令
      */
     const filename = `main-${++idx}${extension}`
     const hostPath = path.join(__dirname, '/code')
-    const dockerImageName = `${dockerPrefix}:${version}`
-    const dockerImageVolume = `${hostPath}:/code`
-    const dockerContainerName = `runner-${idx}`
-    const execFileCommand = `${command} /code/${filename}`
-    const dockerPullCommand = `docker pull ${dockerImageName}`
-    const dockerRunCommand = `docker run --rm --memory=50m --name ${dockerContainerName} -v ${dockerImageVolume} ${dockerImageName} ${execFileCommand}`
-    const dockerStopCommand = `docker stop ${dockerContainerName}`
+    const dockerOptions = {
+      imageName: `${dockerPrefix}:${version}`,
+      containerName: `runner-${idx}`,
+      volume: `${hostPath}:/code`,
+      execCommand: `${command} /code/${filename}`
+    }
     /**
-     * 写入文件、拉取镜像, 需要处理如下错误:
-     *   文件写入错误
-     *   镜像拉取超时
-     *   镜像不存在错误
+     * 拉取镜像阶段
      */
-    SSE.writeStream(uid, 'sse-message', `sand box: 开始拉取镜像 ${dockerImageName}`)
-    try {
-      await Promise.all([
-        writeFile(hostPath, filename, code),
-        execCommand(dockerPullCommand, { timeout: 30000, strict: true })
-      ])
+    SSE.writeStream(uid, 'sse-message', `sand box: 开始拉取镜像 ${dockerOptions.imageName}`)
+    const [[writeErr, ], [pullErr, ]] = await Promise.all([
+      writeFile(hostPath, filename, code),
+      pullImage(dockerOptions.imageName, 30000)
+    ])
+    if (!writeErr || !pullErr) {
       SSE.writeStream(uid, 'sse-message', 'sand box: 镜像拉取成功')
-    } catch (e) {
-      if (e.message === WRITE_ERR) SSE.writeStream(uid, 'sse-message', 'sand box: 文件写入异常')
-      if (e.message === TIMEOUT_ERR) SSE.writeStream(uid, 'sse-message', 'sand box: 镜像拉取超时')
-      SSE.writeStream(uid, 'sse-message', e)
+    } else {
+      if (writeErr.message === WRITE_ERR)
+        SSE.writeStream(uid, 'sse-message', 'sand box: 文件写入异常')
+      if (pullErr.message === TIMEOUT_ERR)
+        SSE.writeStream(uid, 'sse-message', 'sand box: 镜像拉取超时')
+      else
+        SSE.writeStream(uid, 'sse-message', pullErr)
       SSE.writeStream(uid, 'sse-message', 'sand box: 执行结束')
       return ctx.body = {}
     }
     /**
-     * 执行代码, 并最终停止Docker容器
-     *   streamMode 执行约30秒
-     *   bufferMode 执行约10秒
+     * 执行代码阶段
      */
     SSE.writeStream(uid, 'sse-message', `sand box: 开始执行代码`)
     if (!streamMode) {
-      try {
-        const stdout = await execCommand(dockerRunCommand, { timeout: 10000 })
-        SSE.writeStream(uid, 'sse-result', { result: stdout } )
-        SSE.writeStream(uid, 'sse-message', 'sand box: 代码执行结束')
-      } catch (e) {
-        if (e.message === TIMEOUT_ERR) SSE.writeStream(uid, 'sse-message', 'sand box: 代码执行超时, 非stream模式下时间限制为10秒')
-      } finally {
-        try { await execCommand(dockerStopCommand) } catch (e) {}
-      }
+      const [dockerErr, execResult] = await startDockerByExec(dockerOptions, 10000)
+
+      if (dockerErr && dockerErr.message === TIMEOUT_ERR)
+        SSE.writeStream(uid, 'sse-message', 'sand box: 代码执行超时, 非stream模式下时间限制为10秒')
+      else
+        SSE.writeStream(uid, 'sse-result', { result: execResult || dockerErr } )
+      SSE.writeStream(uid, 'sse-message', 'sand box: 代码执行结束')
     } else {
-      spawnCommand(dockerRunCommand, SSE.getInstance(uid).stream, {
-        shell: false,
-        timeout: 30000,
-        onTimeout: () => { SSE.writeStream(uid, 'sse-message', 'sand box: 代码执行已被中断, stream模式下时间限制为30秒') },
-        onClose: () => { SSE.writeStream(uid, 'sse-message', 'sand box: 代码执行结束') },
-        onExit: async () => {
-          try { await execCommand(dockerStopCommand) } catch (e) {}
-        }
-      })
+      startDockerBySpawn(
+        dockerOptions,
+        SSE.getInstance(uid).stream,
+        30000,
+        () => { SSE.writeStream(uid, 'sse-message', 'sand box: 代码执行已被中断, stream模式下时间限制为30秒') },
+        () => { SSE.writeStream(uid, 'sse-message', 'sand box: 代码执行结束') }
+      )
     }
     return ctx.body = { }
   })
