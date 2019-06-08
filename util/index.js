@@ -6,17 +6,20 @@ const SSETransform = require('./transform')
 
 const TIMEOUT_ERR = 'EXEC TIMEOUT'
 const WRITE_ERR = 'WRITE ERROR'
+const DOCKER_EXIT_CODE = 137
 const noop = () => {}
 /**
  * 停止Docker容器
- * @description exec方法中的timeout选项在执行“docker run”命令时无效， 因此采用“docker stop”命令来正确限制容器使用时长
+ * @description
+ *   exec方法中的timeout选项在执行“docker run”命令时无效， 因此采用“docker kill”命令来限制容器使用时长
+ *   通过docker kill, childProcess exitCode值为137
  * @param {string} containerName 容器名称
  * @param {number} timeout 限制使用时长
  */
 function stopDocker(containerName, timeout) {
   return setTimeout(async () => {
     try {
-      await exec(`docker stop ${containerName}`)
+      await exec(`docker kill ${containerName}`)
     } catch (e) {
       console.log(`停止Docker容器失败` + e)
     }
@@ -66,9 +69,9 @@ module.exports = {
         else
           resolve(stdout)
       })
-      childProcess.on('close', (code, signal) => {
+      childProcess.on('close', code => {
         // 超时接收到SIGPIPE信号, 而不是SIGTERM
-        if (signal) reject(new Error(TIMEOUT_ERR))
+        if (code) reject(new Error(TIMEOUT_ERR))
       })
     }).then(result => [null, result]).catch(error => [error, null])
   },
@@ -91,9 +94,12 @@ module.exports = {
       const childProcess = exec(`docker run --rm --memory=50m --name ${containerName} -v ${volume} ${imageName} ${execCommand}`, (e, stdout, stderr) => {
         resolve(stderr || stdout)
       })
-      stopDocker(containerName, timeout)
-      childProcess.on('close', (code, signal) => {
-        if (signal) reject(new Error(TIMEOUT_ERR))
+
+      let timer = stopDocker(containerName, timeout)
+
+      childProcess.on('close', code => {
+        if (code === DOCKER_EXIT_CODE) reject(new Error(TIMEOUT_ERR))
+        else clearTimeout(timer)
       })
     }).then(result => [null, result]).catch(e => [e, null])
   },
@@ -116,14 +122,14 @@ module.exports = {
     const transferStation = new PassThrough()
     const t = new SSETransform()
 
-    let timer = timeout && (stopDocker(containerName, timeout))
+    let timer = stopDocker(containerName, timeout)
 
     childProcess.stdout.pipe(transferStation)
     childProcess.stderr.pipe(transferStation)
     transferStation.pipe(t).pipe(targetStream, { end: false })
 
-    childProcess.on('close', (code, signal) => {
-      if (signal)
+    childProcess.on('close', code => {
+      if (code === DOCKER_EXIT_CODE)
         onTimeout()
       else
         clearTimeout(timer)
