@@ -22,7 +22,7 @@
 
 + `Koa2`
 
-+ `Server Send Events`
++ `Server Sent Events`: `@caaalabash/node-sse`
 
 + `Docker`
 
