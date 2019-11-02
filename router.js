@@ -30,6 +30,7 @@ router
       setHeaderFunc: ctx.set.bind(ctx),
       processChunk: chunk => JSON.stringify({ result: chunk.toString() }),
       connectEventName: INIT_EVENT,
+      transformEventName: RESULT_EVENT
     })
     ctx.body = sse.stream
   })
@@ -94,8 +95,8 @@ router
         dockerOptions,
         sseInstance.transformStream,
         30000,
-        () => { sseInstance(MESSAGE_EVENT, 'sand box: 代码执行已被中断, stream模式下时间限制为30秒') },
-        () => { sseInstance(MESSAGE_EVENT, 'sand box: 代码执行结束') }
+        () => { sseInstance.send(MESSAGE_EVENT, 'sand box: 代码执行已被中断, stream模式下时间限制为30秒') },
+        () => { sseInstance.send(MESSAGE_EVENT, 'sand box: 代码执行结束') }
       )
     }
     return ctx.status = 200
