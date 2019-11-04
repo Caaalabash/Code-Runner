@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/Caaalabash/Code-Runner#readme",
   "dependencies": {
-    "@caaalabash/node-sse": "^0.0.5",
+    "@caaalabash/node-sse": "^0.0.7",
     "koa": "^2.7.0",
     "koa-bodyparser": "^4.2.1",
     "koa-router": "^7.4.0",
