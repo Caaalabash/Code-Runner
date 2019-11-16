@@ -5,6 +5,7 @@ const { exec, spawn } = require('child_process')
 const TIMEOUT_ERR = 'EXEC TIMEOUT'
 const WRITE_ERR = 'WRITE ERROR'
 const DOCKER_EXIT_CODE = 137
+const dockerCommand = 'docker run -u 1000 --net=none --rm --memory=50m'
 
 /**
  * 写入文件的Promise封装
@@ -49,7 +50,7 @@ function pullImage(imageName, timeout) {
       else resolve(stdout)
     })
     childProcess.on('close', code => {
-      // 超时接收到SIGPIPE信号, 而不是SIGTERM
+
       if (code) reject(new Error(TIMEOUT_ERR))
     })
   }).then(result => [null, result]).catch(error => [error, null])
@@ -72,7 +73,7 @@ function startDockerByExec(dockerOptions, timeout) {
 
   return new Promise((resolve, reject) => {
     let result
-    const childProcess = exec(`docker run --rm --memory=50m --name ${containerName} -v ${volume} ${imageName} ${execCommand}`, (e, stdout, stderr) => {
+    const childProcess = exec(`${dockerCommand} --name ${containerName} -v ${volume} ${imageName} ${execCommand}`, (e, stdout, stderr) => {
       result = stderr || stdout
     })
 
@@ -101,7 +102,7 @@ function startDockerByExec(dockerOptions, timeout) {
  */
 function startDockerBySpawn(dockerOptions, targetStream, timeout, onTimeout, onClose) {
   const { containerName, imageName, execCommand, volume } = dockerOptions
-  const commandStr = `docker run --rm --memory=50m --name ${containerName} -v ${volume} ${imageName} ${execCommand}`
+  const commandStr = `${dockerCommand} --name ${containerName} -v ${volume} ${imageName} ${execCommand}`
   const [command, ...args] = commandStr.split(' ')
 
   const childProcess = spawn(command, args)

@@ -44,9 +44,19 @@ router
   .post('/runner', async (ctx) => {
     const { language, code, version, uid, streamMode } = ctx.request.body
     const { extension, dockerPrefix, command } = languageList[language]
-    /**
-     * 文件名、本地路径、镜像名、容器名、挂载卷、执行命令、SSE实例
-     */
+    const sseInstance = SSE.getInstance(uid)
+
+    if (!['python', 'node', 'go'].includes(language)) {
+      sseInstance.send(MESSAGE_EVENT, 'sand box: 当前仅支持python、node、go三种语言')
+      sseInstance.send(MESSAGE_EVENT, 'sand box: 本次执行结束')
+      return ctx.body = {}
+    }
+    if (version !== 'alpine') {
+      sseInstance.send(MESSAGE_EVENT, 'sand box: 为了服务器安全, 当前仅支持golang:alpine、python:alpine、node:alpine镜像')
+      sseInstance.send(MESSAGE_EVENT, 'sand box: 本次执行结束')
+      return ctx.body = {}
+    }
+
     const filename = `main-${++idx}${extension}`
     const hostPath = path.join(__dirname, '/code')
     const dockerOptions = {
@@ -55,7 +65,7 @@ router
       volume: `${hostPath}:/code`,
       execCommand: `${command} /code/${filename}`
     }
-    const sseInstance = SSE.getInstance(uid)
+
     /**
      * 拉取镜像阶段
      */
